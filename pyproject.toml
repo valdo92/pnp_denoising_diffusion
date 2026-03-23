@@ -17,6 +17,8 @@ matplotlib = "^3.10.7"
 ipykernel = "^7.1.0"
 python-box = "^7.3.2"
 opencv-python = "^4.13.0.92"
+lpips = "^0.1.4"
+torchmetrics = "^1.9.0"
 
 
 [build-system]

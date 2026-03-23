@@ -193,3 +193,6 @@ cython_debug/
 .pypirc
 data/models_stats/boston_quick_notes/metrics.csv
 data/models_stats/boston_classifier/metrics.csv
+
+data/*
+!data/.gitkeep

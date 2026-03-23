@@ -2,7 +2,7 @@ import math
 import numpy as np
 import torch 
 import cv2
-from torchmetrics.image.fid import FrechetInceptionDistance
+#from torchmetrics.image.fid import FrechetInceptionDistance
 
 def calculate_fid_process(denoised_images, ground_truth_images):
     """

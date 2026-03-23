@@ -30,6 +30,17 @@ astroid = ["astroid (>=2,<5)"]
 test = ["astroid (>=2,<5)", "pytest (<9.0)", "pytest-cov", "pytest-xdist"]
 
 [[package]]
+name = "backports-lzma"
+version = "0.0.14"
+description = "Backport of Python 3.3's 'lzma' module for XZ/LZMA compressed files."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "backports.lzma-0.0.14.tar.gz", hash = "sha256:16d8b68e4d3cd4e6c9ddb059850452946da3914c8a8e197a7f2b0954559f2df4"},
+]
+
+[[package]]
 name = "cffi"
 version = "2.0.0"
 description = "Foreign Function Interface for Python calling C code."
@@ -2176,4 +2187,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "4eb225e267574a01ff66f84d13575d6ad3e8e32e6d0e2b7d0065d41507240797"
+content-hash = "ea8f1f0b338d338d26e83915eddc51d7684fe843d9b1cfb84fe5a631f08e67f2"

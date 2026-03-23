@@ -1,18 +1,22 @@
 """The main code. You can modify config.yaml to change the parameters to run the code"""
 
 from torch import device
-from pnp_denoising_diffusion.utils.score import calculate_psnr, calculate_fid   
-import lpips
-from pnp_denoising_diffusion.utils import load_config, set_seed
+# from pnp_denoising_diffusion.utils.score import calculate_psnr, calculate_fid   
+# import lpips
 from pnp_denoising_diffusion.utils.utils import load_config, set_seed
 from pnp_denoising_diffusion.utils.load_image import load_image
 from pnp_denoising_diffusion.utils.read_image import read_and_save
+from pnp_denoising_diffusion.transform import transform_image
 
 
 
 if __name__ == "__main__":
     config = load_config("config.yaml")
     set_seed(config.seed)
+    image = load_image(config.path_to_image)  # 269 x 269 x 3
+    image = image[:256, :256, :] # 256 x 256 x 3
+    image_transformed = transform_image(image, config)
+    read_and_save(image_transformed, config.path_to_save)
     
     # for img in config.test_images:
     #     print(f"Processing image: {img}")
@@ -46,6 +50,4 @@ if __name__ == "__main__":
     # print("Average PSNR:", ave_psnr)
     # print("Average LPIPS:", ave_lpips)
     # print("Average FID:", ave_fid)
-    image = load_image(config.path_to_image)  # 269x269x3
-    read_and_save(image, config.path_to_save)
     print("piche")

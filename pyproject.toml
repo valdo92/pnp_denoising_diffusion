@@ -19,6 +19,7 @@ python-box = "^7.3.2"
 opencv-python = "^4.13.0.92"
 lpips = "^0.1.4"
 torchmetrics = "^1.9.0"
+backports-lzma = "^0.0.14"
 
 
 [build-system]

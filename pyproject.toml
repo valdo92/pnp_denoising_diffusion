@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "pnp_diffusion"
+version = "0.1.0"
+description = ""
+packages = [
+    { include = "pnp_diffusion", from = "src" },
+]
+authors = []
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = ">=3.9.21,<=3.14.12"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

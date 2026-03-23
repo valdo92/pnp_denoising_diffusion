@@ -196,3 +196,6 @@ data/models_stats/boston_classifier/metrics.csv
 
 data/*
 !data/.gitkeep
+
+model/*
+!model/.gitkeep

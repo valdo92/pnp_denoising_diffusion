@@ -2,4 +2,6 @@
 
 
 seed: 42
+path_to_image: data/valentin.png
+path_to_save: results/piche.png
 name: piche

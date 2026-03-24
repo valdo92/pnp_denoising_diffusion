@@ -4,9 +4,9 @@ noise_model_t: 0.
 noise_level_img: 0.
 
 seed: 42
-path_to_image: data/valentin.png
+path_to_image: data/69000.png
 path_to_save: results/piche.png
-model_path: model/256x256_diffusion_uncond.pt
+model_path: model/ffhq_10m.pt
 
 sigma                   : 0.001  # noise level associated with condition y
 lambda_                 : 1.               # key parameter lambda            # use analytical solution
@@ -17,7 +17,7 @@ guidance_scale          : 1.0
 skip_type: "quad"
 
 num_train_timesteps     : 1000
-iter_num                : 20             # set number of iterations
+iter_num                : 1000             # set number of iterations
 #iter_num_U              : 1                 # set number of inner iterations, default: 1
 
 
@@ -29,9 +29,9 @@ beta_end                : 0.02
 # Guided diffusion
 guided_diffusion:
 
-  num_channels: 256
-  num_res_blocks: 2
-  attention_resolutions: "8,16,32"
+  num_channels: 128
+  num_res_blocks: 1
+  attention_resolutions: "16"
 
   # clip_denoised: True
   # num_samples: 1
@@ -52,7 +52,7 @@ guided_diffusion:
   predict_xstart: False
   rescale_timesteps: False
   rescale_learned_sigmas: False
-  channel_mult: ""
+  channel_mult: "1,1,2,2,4,4"
   learn_sigma: True
   class_cond: False
   use_checkpoint: False

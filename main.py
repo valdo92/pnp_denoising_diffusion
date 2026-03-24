@@ -8,6 +8,7 @@ from pnp_denoising_diffusion.utils.utils import load_config, set_seed
 from pnp_denoising_diffusion.utils import utils_model 
 from pnp_denoising_diffusion.utils.load_image import load_image
 from pnp_denoising_diffusion.utils.read_image import read_and_save
+from pnp_denoising_diffusion.utils.plot_image import imshow
 from pnp_denoising_diffusion.transform import transform_image 
 from pnp_denoising_diffusion.guided_diffusion.script_util import create_model_and_diffusion
 from pnp_denoising_diffusion.diffusion import simple_diffusion_step, single_diffpir_step
@@ -18,6 +19,7 @@ if __name__ == "__main__":
     set_seed(config.seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    print("--- Parameters ---")
     ### PREPARATION DES PARAMETRES DE LA DIFFUSION ###
     skip = config.num_train_timesteps // config.iter_num
     betas = np.linspace(config.beta_start, config.beta_end, config.num_train_timesteps, dtype=np.float32)
@@ -29,7 +31,7 @@ if __name__ == "__main__":
     sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
     sqrt_1m_alphas_cumprod = torch.sqrt(1. - alphas_cumprod)
     reduced_alpha_cumprod = torch.div(sqrt_1m_alphas_cumprod, sqrt_alphas_cumprod)  
-    t_start                 = config.num_train_timesteps - 1 
+    t_start = config.num_train_timesteps - 1 
 
     image = load_image(config.path_to_image)  # 269 x 269 x 3
     image = image[:256, :256, :] # 256 x 256 x 3
@@ -81,9 +83,15 @@ if __name__ == "__main__":
         sigma_ks.append((sqrt_1m_alphas_cumprod[i]/sqrt_alphas_cumprod[i]))
         rhos.append(config.lambda_*(config.sigma**2)/(sigma_ks[i]**2))            
     rhos, sigmas, sigma_ks = torch.tensor(rhos).to(device), torch.tensor(sigmas).to(device), torch.tensor(sigma_ks).to(device)
+    
+    imshow(x, title='init random')
+    imshow(y, title='image transformé')
 
+
+    print(f"--- Reverse Diffusion --- {len(seq)} ")
     # reverse diffusion for one image from random noise
     for i in range(len(seq)):
+        print(i)
         curr_sigma = sigmas[seq[i]].cpu().numpy()
         t_i = utils_model.find_nearest(reduced_alpha_cumprod, curr_sigma)
         
@@ -126,10 +134,13 @@ if __name__ == "__main__":
             x_show = np.squeeze(x_show)
             if x_show.ndim == 3:
                 x_show = np.transpose(x_show, (1, 2, 0))
+            imshow(x_show, title=f'Denoised Image {i}')
             progress_img.append(x_show)
+        
     #recover intial ground truth image
     x[mask.to(torch.bool)] = y[mask.to(torch.bool)]
 
+    print( "--- Measurements ---")
     # ### Phase De Test
     loss_fn_vgg = lpips.LPIPS(net='vgg').to(device)
 
@@ -146,7 +157,7 @@ if __name__ == "__main__":
     img_psnr_est = np.transpose(x_0_uint8.squeeze(0).cpu().numpy(), (1, 2, 0)) # [0, 255] HWC
     
     # Image normalisée entre -1 et 1 pour LPIPS
-    image_norm = (image / 255.0) * 2.0 - 1.0
+    image_norm = ((image / 255.0) * 2.0 - 1.0).to(device)
 
     fid_score = calculate_fid_process(x_0_uint8, image_uint8) ## tensor in range [0, 255]
     test_results['fid'].append(fid_score)
@@ -162,6 +173,5 @@ if __name__ == "__main__":
     print("Average PSNR:", ave_psnr)
     print("Average LPIPS:", ave_lpips)
     print("Average FID:", ave_fid)
-    image = load_image(config.path_to_image)  # 269x269x3
-    read_and_save(image, config.path_to_save)
+    read_and_save(img_psnr_est, config.path_to_save)
     print("piche")

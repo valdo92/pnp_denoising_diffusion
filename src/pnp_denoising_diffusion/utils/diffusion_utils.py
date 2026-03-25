@@ -3,6 +3,7 @@ from box import Box
 import torch
 import numpy as np
 from pnp_denoising_diffusion.utils import utils_model 
+from pnp_denoising_diffusion.guided_diffusion.script_util import create_model_and_diffusion
 
 def get_params_diffusion(config):
     """return the params for the diffusion"""
@@ -50,3 +51,14 @@ def initialize_x(params, config, y):
                     sqrt_alpha_effective**2 * params.sqrt_1m_alphas_cumprod[t_y]**2) \
                         * torch.randn_like(y)
     return x
+
+
+def load_diffusion_model(config):
+    """Load the diffusion model from open ai"""
+    create_model_and_diffusion(**config.guided_diffusion)
+    model.load_state_dict(torch.load(config.model_path, map_location="cpu"))
+    model = model.to(config.device)
+    model.eval()
+    for param in model.parameters():
+        param.requires_grad = False
+    return model

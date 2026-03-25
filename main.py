@@ -14,7 +14,7 @@ from pnp_denoising_diffusion.transform import transform_image
 from pnp_denoising_diffusion.guided_diffusion.script_util import create_model_and_diffusion
 from pnp_denoising_diffusion.diffusion import simple_diffusion_step, single_diffpir_step
 from pnp_denoising_diffusion.utils.diffusion_utils import (
-    get_params_diffusion, transfer_model_shape, initialize_x
+    get_params_diffusion, transfer_model_shape, initialize_x, load_diffusion_model
     )
 
 
@@ -33,16 +33,11 @@ if __name__ == "__main__":
         ) 
     y = image_transformed
     x = initialize_x(params, config, y)
-    
+
     print("⏳ Loading the model and the weights...")
-    model, diffusion = create_model_and_diffusion(**config.guided_diffusion)
-    model.load_state_dict(torch.load(config.model_path, map_location="cpu"))
-    model = model.to(device)
-    model.eval()
-    for param in model.parameters():
-        param.requires_grad = False
+    model = load_diffusion_model(config)
+
     
-    # TODO: peut être que l'on peut garder uniquement un config.skip_type ici non ?
 
     progress_img = []
     # create sequence of timestep for sampling

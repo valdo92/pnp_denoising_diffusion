@@ -4,6 +4,9 @@ import torch
 import numpy as np
 from pnp_denoising_diffusion.utils import utils_model 
 from pnp_denoising_diffusion.guided_diffusion.script_util import create_model_and_diffusion
+import lpips
+from pnp_denoising_diffusion.utils.score import calculate_psnr, calculate_fid_process
+from pnp_denoising_diffusion.utils.read_image import read_and_save
 
 
 def get_params_diffusion(config):
@@ -87,3 +90,33 @@ def load_diffusion_model(config):
     for param in model.parameters():
         param.requires_grad = False
     return model
+
+
+def run_evaluation(x_final, image_gt, config, device):
+    """
+    Calcule les métriques (PSNR, LPIPS, FID) et sauvegarde l'image finale.
+    """
+
+    x_0_output = (x_final / 2 + 0.5).clamp(0, 1)
+    
+    img_est_uint8 = (x_0_output * 255).to(torch.uint8)
+    img_gt_uint8 = ((image_gt / 2 + 0.5) * 255).clamp(0, 255).to(torch.uint8)
+
+    img_psnr_gt = np.transpose(img_gt_uint8.squeeze(0).cpu().numpy(), (1, 2, 0))
+    img_psnr_est = np.transpose(img_est_uint8.squeeze(0).cpu().numpy(), (1, 2, 0))
+    psnr_score = calculate_psnr(img_psnr_gt, img_psnr_est)
+
+    loss_fn_vgg = lpips.LPIPS(net='vgg').to(device)
+    lpips_score = loss_fn_vgg(x_final.detach(), image_gt).item()
+    
+    del loss_fn_vgg
+
+    fid_score = calculate_fid_process(img_est_uint8, img_gt_uint8)
+
+    read_and_save(img_psnr_est, config.path_to_save)
+
+    return {
+        "psnr": psnr_score,
+        "lpips": lpips_score,
+        "fid": fid_score
+    }

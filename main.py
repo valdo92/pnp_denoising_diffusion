@@ -13,7 +13,8 @@ from pnp_denoising_diffusion.utils.plot_image import imshow
 from pnp_denoising_diffusion.transform import transform_image 
 from pnp_denoising_diffusion.diffusion import simple_diffusion_step, single_diffpir_step
 from pnp_denoising_diffusion.utils.diffusion_utils import (
-    get_params_diffusion, transfer_model_shape, initialize_x, load_diffusion_model
+    get_params_diffusion, transfer_model_shape, initialize_x,
+    load_diffusion_model, run_evaluation
     )
 
 
@@ -41,6 +42,7 @@ if __name__ == "__main__":
 
     imshow(x, title='init random', save_path=f"results/{config.name_folder_result}/init_random.png", show=False)
     imshow(y, title='image transformé', save_path=f"results/{config.name_folder_result}/Image_intiale_Transformée.png", show=False)
+
 
     print(f"--- Reverse Diffusion --- {len(params.seq)} ")
     progress_img = []
@@ -81,42 +83,9 @@ if __name__ == "__main__":
             imshow(x_show, title=f'Denoised Image {i}', save_path=f"results/{config.name_folder_result}/etape_{i}.png", show=False)
             progress_img.append(x_show)
         torch.cuda.empty_cache()
-        
-    #recover intial ground truth image
+    
     x[mask.to(torch.bool)] = y[mask.to(torch.bool)]
 
-    x_0_output = (x / 2 + 0.5)
-    print( "--- Measurements ---")
-    # ### Phase De Test
-    loss_fn_vgg = lpips.LPIPS(net='vgg').to(device)
-
-    test_results = dict()  
-    test_results['lpips'] = []   
-    test_results['psnr'] = []
-    test_results['fid'] = []
-
-    # Convert to standard formats for metrics
-    image_norm = image  # Already in [-1, 1]
+    metrics = run_evaluation(x, image, config, device)
     
-    # image_uint8 converts from [-1, 1] to [0, 255]
-    image_uint8 = ((image / 2 + 0.5) * 255).clamp(0, 255).to(torch.uint8)
-    
-    img_psnr_gt = np.transpose(image_uint8.squeeze(0).cpu().numpy(), (1, 2, 0)) # [0, 255] HWC
-    img_psnr_est = np.transpose(x_0_uint8.squeeze(0).cpu().numpy(), (1, 2, 0)) # [0, 255] HWC
-
-    fid_score = calculate_fid_process(x_0_uint8, image_uint8) ## tensor in range [0, 255]
-    test_results['fid'].append(fid_score)
-    lpips_score = loss_fn_vgg(x_0_output.detach()*2-1, image_norm) ## tensor in range [-1, 1]
-    test_results['lpips'].append(lpips_score.item())
-    psnr_score = calculate_psnr(img_psnr_gt, img_psnr_est) ## numpy array in range [0, 255]
-    test_results['psnr'].append(psnr_score)
-
-    ave_psnr = sum(test_results['psnr']) / len(test_results['psnr'])
-    ave_lpips = sum(test_results['lpips']) / len(test_results['lpips'])
-    ave_fid = sum(test_results['fid']) / len(test_results['fid'])
-
-    print("Average PSNR:", ave_psnr)
-    print("Average LPIPS:", ave_lpips)
-    print("Average FID:", ave_fid)
-    read_and_save(img_psnr_est, config.path_to_save)
-    print("piche")
+    print(f"✅ Finish ! PSNR: {metrics['psnr']:.2f}, LPIPS: {metrics['lpips']:.4f}")

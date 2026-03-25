@@ -16,7 +16,9 @@ lambda_                 : 6.               # key parameter lambda            # u
 eta                     : 0.0               # eta for ddim samplingn  
 zeta                    : 1.
 guidance_scale          : 1.0   
-
+# Choix de la methode Plug-and-Play
+pnp_method              : 'hqs'           # 'hqs', 'pgd' ou 'dps'
+gamma_pgd               : 1.0             # taille du pas gradient (utilisé si pnp_method='pgd' ou 'dps')
 num_train_timesteps     : 1000
 iter_num                : 20            # set number of iterations
 

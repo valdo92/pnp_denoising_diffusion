@@ -89,8 +89,12 @@ if __name__ == "__main__":
             # SOLUTION ANALYTIQUE ET SAUT DDIM (DiffPIR)
             # -------------------------------------------------------
             if i < (config.num_train_timesteps - config.noise_model_t):
+                pnp_method = config.get('pnp_method', 'hqs')
+                gamma = config.get('gamma_pgd', 1.0)
+                
                 x_next, x0_est = single_diffpir_step(
-                    x, y, mask, t_i, t_im1, model, params.rhos, params.sigmas, params.alphas_cumprod, config.guidance_scale, zeta = config.zeta
+                    x, y, mask, t_i, t_im1, model, params.rhos, params.sigmas, params.alphas_cumprod, 
+                    config.guidance_scale, zeta=config.zeta, pnp_method=pnp_method, gamma=gamma
                 )
                 x = x_next
             else:

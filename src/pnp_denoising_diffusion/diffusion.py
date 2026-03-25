@@ -41,7 +41,7 @@ def simple_diffusion_step(model, x_t, t_i, t_im1, alphas_cumprod, eta=0.0):
 
     return x_prev, eps_pred
 
-def single_diffpir_step(x, y, mask, t_i, t_im1, model_fn, rhos, sigmas, alphas_cumprod, guidance_scale, eta=0.0, zeta=0.0):
+def single_diffpir_step(x, y, mask, t_i, t_im1, model_fn, rhos, sigmas, alphas_cumprod, guidance_scale, eta=0.0, zeta=0.0, pnp_method='hqs', gamma=1.0):
     # 1. Prédire le bruit (epsilon) via le modèle
     # Résolution de l'hypothèse de la prédiction directe : on suppose que model_fn prédit epsilon
     # (Si votre modèle nécessite "noise_level" ou autre, vous pouvez l'encapsuler dans model_fn)
@@ -65,9 +65,32 @@ def single_diffpir_step(x, y, mask, t_i, t_im1, model_fn, rhos, sigmas, alphas_c
     x0_hat = (x - sqrt_1mat * eps_pred) / sqrt_at
     # x0_hat = x0_hat.clamp(-1, 1) # Recommandé pour la stabilité numérique
 
-    # 2. Solution Analytique (Le cœur de DiffPIR)
-    # On force la cohérence avec l'image dégradée y (Inpainting)
-    x0_p = (mask * y + rhos[t_i] * x0_hat) / (mask + rhos[t_i])
+    # 2. Correction selon la méthode PnP choisie
+    if pnp_method.lower() == 'hqs':
+        # --- Half-Quadratic Splitting (HQS) ---
+        # Solution analytique exacte pondérée par rho
+        x0_p = (mask * y + rhos[t_i] * x0_hat) / (mask + rhos[t_i])
+    
+    elif pnp_method.lower() == 'pgd':
+        # --- Proximal Gradient Descent (PGD) classique ---
+        grad = mask * x0_hat - mask * y
+        x0_p = x0_hat - gamma * grad
+        
+    elif pnp_method.lower() == 'dps':
+        # --- Diffusion Posterior Sampling (DPS) ---
+        # Le pas de gradient évolue de façon dynamique inversement proportionnelle à la norme de l'erreur
+        error = mask * x0_hat - mask * y
+        # Calcul de la norme L2 de l'erreur pour chaque image du batch
+        norm_error = torch.linalg.norm(error.reshape(error.shape[0], -1), dim=1).view(-1, 1, 1, 1)
+        
+        # Pas de gradient dynamique (gamma_t évolue à chaque timestep)
+        gamma_t = gamma / (norm_error + 1e-6)
+        x0_p = x0_hat - gamma_t * error
+
+    else:
+        raise ValueError(f"Méthode PnP inconnue: {pnp_method}. Choisissez 'hqs', 'pgd' ou 'dps'.")
+
+    # On peut appliquer le guidance scale pour doser la force de cette correction
     x0 = x0_hat + guidance_scale * (x0_p - x0_hat)
 
     # 3. Recalculer le pseudo-epsilon (après ajustement de x0 pour coller à l'observation)

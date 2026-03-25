@@ -1,5 +1,4 @@
 # Multivariate Time Series Forecasting with Graph Neural Networks
-## Application to EEG Data
 
 **Authors:** [Valentin Exbrayat](https://github.com/valdo92), [Hugo Pavy](https://github.com/hpavy)  
 **Date:** March 2026
@@ -49,8 +48,17 @@ poetry install
 
 ### 🚀 Minimal run snippet
 
-1) Configure `config.yaml` choosing the data, 
-2) Run the main file (example):
+1) Configure `config.yaml` choosing the data and the hyperparameters.
+* You need to put your data in the folder `data/`. 
+* You need to write which data in this folder you want to use in a txt file. Then write the path of this file in config.
+
+Example of the `config.yaml` file in order to write the path of the files: 
+
+```
+image_list_file: data/ffhq_100_val.txt
+```
+
+1) Run the main file (example):
 
 ```bash
 poetry run python main.py

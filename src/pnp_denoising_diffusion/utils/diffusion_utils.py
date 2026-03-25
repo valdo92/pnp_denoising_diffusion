@@ -8,7 +8,9 @@ from pnp_denoising_diffusion.guided_diffusion.script_util import create_model_an
 def get_params_diffusion(config):
     """return the params for the diffusion"""
     skip = config.num_train_timesteps // config.iter_num
-    betas = np.linspace(config.beta_start, config.beta_end, config.num_train_timesteps, dtype=np.float32)
+    betas = np.linspace(
+        config.beta_start, config.beta_end, config.num_train_timesteps, dtype=np.float32
+        )
     betas = torch.from_numpy(betas).to(config.device)
     alphas = 1.0 - betas
     alphas_cumprod = np.cumprod(alphas.cpu(), axis=0)
@@ -16,12 +18,35 @@ def get_params_diffusion(config):
     sqrt_1m_alphas_cumprod = torch.sqrt(1. - alphas_cumprod)
     reduced_alpha_cumprod = torch.div(sqrt_1m_alphas_cumprod, sqrt_alphas_cumprod)  
     t_start = config.num_train_timesteps - 1 
+    
+        # create sequence of timestep for sampling
+    seq = np.sqrt(np.linspace(0, config.num_train_timesteps**2, config.iter_num))
+    seq = [int(s) for s in list(seq)]
+    seq[-1] = seq[-1] - 1
+    progress_seq = seq[::(len(seq)//10)]
+    progress_seq.append(seq[-1])
+
+
+    sigmas = []
+    sigma_ks = []
+    rhos = []
+    for i in range(config.num_train_timesteps):
+        sigmas.append(params.reduced_alpha_cumprod[config.num_train_timesteps-1-i])
+        sigma_ks.append((params.sqrt_1m_alphas_cumprod[i]/params.sqrt_alphas_cumprod[i]))
+        rhos.append(config.lambda_*(config.sigma**2)/(sigma_ks[i]**2))            
+    rhos = torch.tensor(rhos).to(config.device)
+    sigmas = torch.tensor(sigmas).to(config.device)
+    sigma_ks = torch.tensor(sigma_ks).to(config.device)
     params = {
         "alphas_cumprod": alphas_cumprod,
         "sqrt_alphas_cumprod": sqrt_alphas_cumprod,
         "sqrt_1m_alphas_cumprod": sqrt_1m_alphas_cumprod,
         "reduced_alpha_cumprod": reduced_alpha_cumprod,
-        "t_start": t_start       
+        "t_start": t_start,
+        "sigmas": sigmas,
+        "rhos": rhos,
+        "sigma_ks": sigma_ks,
+        "seq": seq
     }
     return Box(params)
 

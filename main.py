@@ -37,37 +37,16 @@ if __name__ == "__main__":
     print("⏳ Loading the model and the weights...")
     model = load_diffusion_model(config)
 
-    
-
-    progress_img = []
-    # create sequence of timestep for sampling
-    seq = np.sqrt(np.linspace(0, config.num_train_timesteps**2, config.iter_num))
-    seq = [int(s) for s in list(seq)]
-    seq[-1] = seq[-1] - 1
-    progress_seq = seq[::(len(seq)//10)]
-    progress_seq.append(seq[-1])
-
-
-    sigmas = []
-    sigma_ks = []
-    rhos = []
-    for i in range(config.num_train_timesteps):
-        sigmas.append(params.reduced_alpha_cumprod[config.num_train_timesteps-1-i])
-        sigma_ks.append((params.sqrt_1m_alphas_cumprod[i]/params.sqrt_alphas_cumprod[i]))
-        rhos.append(config.lambda_*(config.sigma**2)/(sigma_ks[i]**2))            
-    rhos, sigmas, sigma_ks = torch.tensor(rhos).to(device), torch.tensor(sigmas).to(device), torch.tensor(sigma_ks).to(device)
-    
     imshow(x, title='init random', save_path="results/init_random.png", show=False)
     imshow(y, title='image transformé', save_path="results/Image_intiale_Transformée.png", show=False)
 
-    torch.cuda.empty_cache()
 
-
-    print(f"--- Reverse Diffusion --- {len(seq)} ")
+    print(f"--- Reverse Diffusion --- {len(params.seq)} ")
+    progress_img = []
     # reverse diffusion for one image from random noise
-    for i in range(len(seq)):
+    for i in range(len(params.seq)):
         print(i)
-        curr_sigma = sigmas[seq[i]].cpu().numpy()
+        curr_sigma = params.sigmas[params.seq[i]].cpu().numpy()
         t_i = utils_model.find_nearest(params.reduced_alpha_cumprod, curr_sigma)
         
         # skip iters
@@ -75,14 +54,14 @@ if __name__ == "__main__":
             continue
 
         # Déterminer le prochain timestep pour le saut DDIM
-        t_im1 = utils_model.find_nearest(params.reduced_alpha_cumprod, sigmas[seq[min(i+1, len(seq)-1)]].cpu().numpy())
+        t_im1 = utils_model.find_nearest(params.reduced_alpha_cumprod, params.sigmas[params.seq[min(i+1, len(params.seq)-1)]].cpu().numpy())
 
         # -------------------------------------------------------
         # SOLUTION ANALYTIQUE ET SAUT DDIM (DiffPIR)
         # -------------------------------------------------------
         if i < (config.num_train_timesteps - config.noise_model_t):
             x_next, x0_est = single_diffpir_step(
-                x, y, mask, t_i, t_im1, model, rhos, sigmas, params.alphas_cumprod, config.guidance_scale, zeta = config.zeta
+                x, y, mask, t_i, t_im1, model, params.rhos, params.sigmas, params.alphas_cumprod, config.guidance_scale, zeta = config.zeta
             )
             x = x_next
         else:
@@ -92,7 +71,7 @@ if __name__ == "__main__":
         current_x0 = x0_est if 'x0_est' in locals() else x
         x_0_progress = (current_x0 / 2 + 0.5)
 
-        if (seq[i] in progress_seq):
+        if (params.seq[i] in progress_seq):
             x_show = x_0_progress.clone().detach().cpu().numpy()       #[0,1]
             x_show = np.squeeze(x_show)
             if x_show.ndim == 3:

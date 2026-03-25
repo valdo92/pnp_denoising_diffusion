@@ -5,9 +5,9 @@ import numpy as np
 from pnp_denoising_diffusion.utils import utils_model 
 from pnp_denoising_diffusion.guided_diffusion.script_util import create_model_and_diffusion
 
+
 def get_params_diffusion(config):
     """return the params for the diffusion"""
-    skip = config.num_train_timesteps // config.iter_num
     betas = np.linspace(
         config.beta_start, config.beta_end, config.num_train_timesteps, dtype=np.float32
         )
@@ -26,13 +26,12 @@ def get_params_diffusion(config):
     progress_seq = seq[::(len(seq)//10)]
     progress_seq.append(seq[-1])
 
-
     sigmas = []
     sigma_ks = []
     rhos = []
     for i in range(config.num_train_timesteps):
-        sigmas.append(params.reduced_alpha_cumprod[config.num_train_timesteps-1-i])
-        sigma_ks.append((params.sqrt_1m_alphas_cumprod[i]/params.sqrt_alphas_cumprod[i]))
+        sigmas.append(reduced_alpha_cumprod[config.num_train_timesteps-1-i])
+        sigma_ks.append((sqrt_1m_alphas_cumprod[i]/sqrt_alphas_cumprod[i]))
         rhos.append(config.lambda_*(config.sigma**2)/(sigma_ks[i]**2))            
     rhos = torch.tensor(rhos).to(config.device)
     sigmas = torch.tensor(sigmas).to(config.device)
@@ -46,7 +45,8 @@ def get_params_diffusion(config):
         "sigmas": sigmas,
         "rhos": rhos,
         "sigma_ks": sigma_ks,
-        "seq": seq
+        "seq": seq,
+        "progress_seq": progress_seq
     }
     return Box(params)
 

@@ -71,7 +71,7 @@ if __name__ == "__main__":
         current_x0 = x0_est if 'x0_est' in locals() else x
         x_0_progress = (current_x0 / 2 + 0.5)
 
-        if (params.seq[i] in progress_seq):
+        if (params.seq[i] in params.progress_seq):
             x_show = x_0_progress.clone().detach().cpu().numpy()       #[0,1]
             x_show = np.squeeze(x_show)
             if x_show.ndim == 3:

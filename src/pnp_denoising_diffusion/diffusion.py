@@ -72,23 +72,20 @@ def single_diffpir_step(x, y, mask, t_i, t_im1, model_fn, rhos, sigmas, alphas_c
         x0_p = (mask * y + rhos[t_i] * x0_hat) / (mask + rhos[t_i])
     
     elif pnp_method.lower() == 'pgd':
-        # --- Proximal Gradient Descent (PGD) classique ---
-        grad = mask * x0_hat - mask * y
-        x0_p = x0_hat - gamma * grad
-        
-    elif pnp_method.lower() == 'dps':
-        # --- Diffusion Posterior Sampling (DPS) ---
-        # Le pas de gradient évolue de façon dynamique inversement proportionnelle à la norme de l'erreur
+        # --- Proximal Gradient Descent (PGD) adaptatif façon DPS ---
+        # Calcul de base de l'erreur (gradient)
         error = mask * x0_hat - mask * y
+        
         # Calcul de la norme L2 de l'erreur pour chaque image du batch
+        # Cela permet d'avoir un pas (gamma_t) dynamique inversement proportionnel à l'erreur
         norm_error = torch.linalg.norm(error.reshape(error.shape[0], -1), dim=1).view(-1, 1, 1, 1)
         
-        # Pas de gradient dynamique (gamma_t évolue à chaque timestep)
+        # Pas de gradient dynamique calculé pour ce timestep
         gamma_t = gamma / (norm_error + 1e-6)
         x0_p = x0_hat - gamma_t * error
 
     else:
-        raise ValueError(f"Méthode PnP inconnue: {pnp_method}. Choisissez 'hqs', 'pgd' ou 'dps'.")
+        raise ValueError(f"Méthode PnP inconnue: {pnp_method}. Choisissez 'hqs' ou 'pgd'.")
 
     # On peut appliquer le guidance scale pour doser la force de cette correction
     x0 = x0_hat + guidance_scale * (x0_p - x0_hat)

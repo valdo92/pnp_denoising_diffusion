@@ -13,7 +13,9 @@ from pnp_denoising_diffusion.utils.plot_image import imshow
 from pnp_denoising_diffusion.transform import transform_image 
 from pnp_denoising_diffusion.guided_diffusion.script_util import create_model_and_diffusion
 from pnp_denoising_diffusion.diffusion import simple_diffusion_step, single_diffpir_step
-from pnp_denoising_diffusion.utils.diffusion_utils import get_params_diffusion, transfer_model_shape
+from pnp_denoising_diffusion.utils.diffusion_utils import (
+    get_params_diffusion, transfer_model_shape, initialize_x
+    )
 
 
 if __name__ == "__main__":
@@ -22,7 +24,6 @@ if __name__ == "__main__":
     set_seed(config.seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     config.device = device
-
     params = get_params_diffusion(config)
     
     image = load_image(config.path_to_image) # [256, 256, 3]
@@ -31,15 +32,7 @@ if __name__ == "__main__":
         image, image_transformed, mask, config.device
         ) 
     y = image_transformed
-
-    # TODO: mettre ça dans config 
-    noise_level_img = 0.0 # Default value
-    noise_model_t = 0 # Default value
-
-    t_y = utils_model.find_nearest(params.reduced_alpha_cumprod, 2 * noise_level_img) # Qu'est ce que fait ce truc ?
-    sqrt_alpha_effective = params.sqrt_alphas_cumprod[params.t_start] / params.sqrt_alphas_cumprod[t_y]
-    x = sqrt_alpha_effective * y + torch.sqrt(params.sqrt_1m_alphas_cumprod[params.t_start]**2 - \
-                    sqrt_alpha_effective**2 * params.sqrt_1m_alphas_cumprod[t_y]**2) * torch.randn_like(y)
+    x = initialize_x(params, config, y)
     
     print("⏳ Loading the model and the weights...")
     model, diffusion = create_model_and_diffusion(**config.guided_diffusion)
@@ -92,7 +85,7 @@ if __name__ == "__main__":
         # -------------------------------------------------------
         # SOLUTION ANALYTIQUE ET SAUT DDIM (DiffPIR)
         # -------------------------------------------------------
-        if i < (config.num_train_timesteps - noise_model_t):
+        if i < (config.num_train_timesteps - config.noise_model_t):
             x_next, x0_est = single_diffpir_step(
                 x, y, mask, t_i, t_im1, model, rhos, sigmas, params.alphas_cumprod, config.guidance_scale
             )

@@ -41,7 +41,11 @@ if __name__ == "__main__":
         writer = csv.writer(f)
         writer.writerow(['image_name', 'psnr', 'lpips'])
 
-    image_paths = glob(os.path.join(config.input_dir, '*.[jp][pn]*[g]'))
+    # Read image list from text file
+    with open(config.image_list_file, 'r') as f:
+        image_filenames = [line.strip() for line in f if line.strip()]
+        
+    image_paths = [os.path.join(config.image_dir, fname) for fname in image_filenames]
     
     for img_path in image_paths:
         print(f"\n--- Processing {img_path} ---")

@@ -4,7 +4,8 @@ noise_model_t: 0.
 noise_level_img: 0.
 
 seed: 42
-input_dir: data/ffhq_100_val.txt
+image_list_file: liste_image.txt
+image_dir: data/ffhq_100_val/69000/
 name_folder_result: valentin_3
 output_csv: metrics.csv
 model_path: model/ffhq_10m.pt

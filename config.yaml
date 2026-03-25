@@ -2,20 +2,23 @@
 
 noise_model_t: 0.
 noise_level_img: 0.
+feature: 2048
 
 seed: 42
-path_to_image: data/69000.png
-name_folder_result: valentin_3
+image_list_file: data/ffhq_100_val.txt
+image_dir: data/
+name_folder_result: ffhq_pnp_20
+output_csv: metrics.csv
 model_path: model/ffhq_10m.pt
 
 sigma                   : 0.001  # noise level associated with condition y
-lambda_                 : 1.               # key parameter lambda            # use analytical solution
+lambda_                 : 6.               # key parameter lambda            # use analytical solution
 eta                     : 0.0               # eta for ddim samplingn  
-zeta                    : 1.0
+zeta                    : 1.
 guidance_scale          : 1.0   
 
 num_train_timesteps     : 1000
-iter_num                : 100             # set number of iterations
+iter_num                : 20            # set number of iterations
 
 
 # noise schedule 

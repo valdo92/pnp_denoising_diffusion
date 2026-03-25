@@ -93,9 +93,10 @@ def load_diffusion_model(config):
     return model
 
 
-def run_evaluation(x_final, image_gt, config, device):
+def run_evaluation(x_final, image_gt, config, device, fid_scorer=None):
     """
-    Calcule les métriques (PSNR, LPIPS, FID) et sauvegarde l'image finale.
+    Calcule les métriques (PSNR, LPIPS) pour une image, 
+    et accumule les features pour le FID global si fid_scorer est fourni.
     """
 
     x_0_output = (x_final / 2 + 0.5).clamp(0, 1)
@@ -112,22 +113,12 @@ def run_evaluation(x_final, image_gt, config, device):
     
     del loss_fn_vgg
 
-    fid_score = calculate_fid_process(img_est_uint8, img_gt_uint8)
-    
-    image_name = os.path.basename(config.path_to_image)
-    metrics_file = "results/metrics.csv"
-    os.makedirs(os.path.dirname(metrics_file), exist_ok=True)
-    file_exists = os.path.isfile(metrics_file)
-    
-    with open(metrics_file, mode='a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        if not file_exists:
-            writer.writerow(["image_name", "PSNR", "LPIPS", "FID"])
-        writer.writerow([image_name, round(psnr_score, 4), round(lpips_score, 4), round(fid_score, 4)])
-    print(f"Metrics appended to {metrics_file}")
+    # Accumulate features for FID across the batch
+    if fid_scorer is not None:
+        fid_scorer.update(img_gt_uint8, real=True)
+        fid_scorer.update(img_est_uint8, real=False)
     
     return {
         "psnr": psnr_score,
-        "lpips": lpips_score,
-        "fid": fid_score
+        "lpips": lpips_score
     }

@@ -2,6 +2,7 @@
 
 import torch
 import numpy as np 
+import cv2
 from pnp_denoising_diffusion.utils.score import calculate_psnr, calculate_fid_process   
 import lpips
 from pnp_denoising_diffusion.utils.utils import load_config, set_seed
@@ -25,8 +26,20 @@ if __name__ == "__main__":
     print("--- Parameters ---")
     params = get_params_diffusion(config)
 
-    image = load_image(config.path_to_image)  # 269 x 269 x 3
-    image = image[:256, :256, :] # 256 x 256 x 3
+    image = load_image(config.path_to_image)  # [H, W, 3]
+    h, w = image.shape[:2]
+    
+    # Downsample si l'image est trop grande (> 512)
+    if h > 512 or w > 512:
+        scale = 256 / min(h, w)
+        new_h, new_w = int(h * scale), int(w * scale)
+        image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        h, w = new_h, new_w
+        
+    # Center crop au lieu d'un crop en haut à gauche pour garder le sujet centré
+    y_start = max(0, (h - 256) // 2)
+    x_start = max(0, (w - 256) // 2)
+    image = image[y_start:y_start+256, x_start:x_start+256, :]
     image_transformed, mask = transform_image(image, config)
     
 
@@ -81,6 +94,8 @@ if __name__ == "__main__":
     imshow(x, title='init random', save_path="results/init_random.png", show=False)
     imshow(y, title='image transformé', save_path="results/Image_intiale_Transformée.png", show=False)
 
+    torch.cuda.empty_cache()
+
 
     print(f"--- Reverse Diffusion --- {len(seq)} ")
     # reverse diffusion for one image from random noise
@@ -118,6 +133,7 @@ if __name__ == "__main__":
                 x_show = np.transpose(x_show, (1, 2, 0))
             imshow(x_show, title=f'Denoised Image {i}', save_path=f"results/etape_{i}.png", show=False)
             progress_img.append(x_show)
+        torch.cuda.empty_cache()
         
     #recover intial ground truth image
     x[mask.to(torch.bool)] = y[mask.to(torch.bool)]

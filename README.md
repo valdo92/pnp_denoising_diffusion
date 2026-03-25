@@ -24,9 +24,9 @@ This repository contains an implementation of the **Denoising Diffusion Models f
 The goal of this work is to study the use of diffusion model for image inpainting in a Plug and Play (Pnp) framework. We reimplemented the architecture, following the code of the original repo: [link of the repo](https://github.com/yuanzhi-zhu/DiffPIR)
 
 **Key Contributions:**
-* **Easier implementation** focusing only on inpainting
-* **Stressing the model**: trying to increase the size of the mask to study how the model handle it.
-* **Othe PnP method**: Instead of HQS we tried to use PGD.
+* **Easier implementation:** focusing only on inpainting
+* **Stressing the model**: trying to increase the size of the mask to study how the model handles it.
+* **Other PnP method**: Instead of HQS we tried to use PGD method with our model.
 * **Study of the parameter $\sigma$**: Changing how the $\sigma$ parameter is computed.
 
 You can find the report of our work in the file [report.pdf](report.pdf).

@@ -7,9 +7,11 @@ import numpy as np
 # Set seaborn style for better-looking plots
 sns.set_theme(style="whitegrid")
 
+import ast # add this import at the top of the file
+
 def load_metrics(exp_name, base_dir="results"):
     """
-    Loads the metrics CSV file for a given experiment and ensures numeric types.
+    Loads the metrics CSV file for a given experiment and perfectly parses PyTorch tensor strings.
     """
     folder_name = f"results_{exp_name}"
     csv_name = f"metrics_{exp_name}.csv"
@@ -21,11 +23,31 @@ def load_metrics(exp_name, base_dir="results"):
         
     df = pd.read_csv(file_path)
     
-    # Clean up PyTorch strings like "tensor(34.5)" or "[12.3]" to become purely numeric
+    # Force robust cleaning on all columns except the image name
     for col in df.columns:
-        if df[col].dtype == object and col != "image_name1.0":  # Skip the image_name column
-            # Use regex to extract the central floating point number
-            df[col] = df[col].astype(str).str.extract(r'([+-]?\d+\.?\d*)').astype(float)
+        if "image_name" in col:
+            continue
+            
+        def clean_val(val):
+            if pd.isna(val):
+                return np.nan
+            val_str = str(val)
+            
+            # If the CSV wrote "tensor(45.67, device='cuda:0')", we clear the tensor wrapper
+            if "tensor" in val_str:
+                val_str = val_str.replace("tensor(", "").split(",")[0].replace(")", "").strip()
+            
+            # If it's a list string like "[45.67]" 
+            if val_str.startswith("["):
+                val_str = val_str.strip("[]")
+                
+            try:
+                return float(val_str)
+            except ValueError:
+                return np.nan # If it completely fails, return NaN to avoid crashing the mean()
+
+        # Apply the cleaner row by row and force float64
+        df[col] = df[col].apply(clean_val).astype('float64')
             
     return df
 
@@ -48,7 +70,9 @@ def analyze_exp1():
 
     # 2. Compute Averages
     # We take the mean across all 100 images for each metric
-    metrics_to_plot = ['psnr_known', 'boundary_tv', 'lpips']    
+    # PSNR known is removed from the plot but can stay in the calculation if needed.
+    # We remove it from metrics_to_plot so it's totally ignored.
+    metrics_to_plot = ['boundary_tv', 'lpips']    
     results = {
         'Method': [],
         'Gamma': []
@@ -85,54 +109,48 @@ def analyze_exp1():
     print("\nSummarized Results:")
     print(res_df.to_string(index=False))
 
-    # 3. Plotting
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    # 3. Plotting (Modifié pour ne faire que 2 colonnes)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle('Experiment 1: PGD Gamma Ablation vs HQS Baseline', fontsize=16)
 
     # Prepare x-axis labels. Treat HQS as a categorical point.
     x_labels = ['HQS\nBaseline'] + [f'PGD\n$\gamma={int(g)}$' for g in gammas]
     x_pos = np.arange(len(x_labels))
 
-    # Metric 1: PSNR Known (Data Fidelity) - Higher is better
+    # Metric 1: Boundary TV (Seam Smoothness) - Lower is better
     ax = axes[0]
-    ax.errorbar(x_pos, res_df['PSNR_known'], yerr=res_df['PSNR_known_std'], fmt='-o', color='blue', capsize=5, capthick=2, markersize=8)
-    # Highlight HQS
-    ax.scatter(0, res_df['PSNR_known'].iloc[0], color='red', s=100, zorder=5, label='HQS Analytic Limit')
-    ax.set_xticks(x_pos)
-    ax.set_xticklabels(x_labels)
-    ax.set_ylabel('PSNR Known (dB)')
-    ax.set_title('Data Fidelity on Known Pixels')
-    ax.legend()
-
-    # Metric 2: Boundary TV (Seam Smoothness) - Lower is better
-    ax = axes[1]
-    ax.errorbar(x_pos, res_df['Boundary_TV'], yerr=res_df['Boundary_TV_std'], fmt='-o', color='green', capsize=5, capthick=2, markersize=8)
-    ax.scatter(0, res_df['Boundary_TV'].iloc[0], color='red', s=100, zorder=5)
+    ax.errorbar(x_pos, res_df['boundary_tv'], yerr=res_df['boundary_tv_std'], fmt='-o', color='green', capsize=5, capthick=2, markersize=8)
+    ax.scatter(0, res_df['boundary_tv'].iloc[0], color='red', s=100, zorder=5, label='HQS Analytic Limit')
     ax.set_xticks(x_pos)
     ax.set_xticklabels(x_labels)
     ax.set_ylabel('Boundary Total Variation')
     ax.set_title('Seam Smoothness (Lower TV is smoother)')
+    ax.legend()
 
-    # Metric 3: Global FID or LPIPS
-    ax = axes[2]
+    # Metric 2: Global FID or LPIPS
+    ax = axes[1]
     if has_fid:
         ax.plot(x_pos, res_df['Global_FID'], '-o', color='purple', markersize=8)
-        ax.scatter(0, res_df['Global_FID'].iloc[0], color='red', s=100, zorder=5)
+        ax.scatter(0, res_df['Global_FID'].iloc[0], color='red', s=100, zorder=5, label='HQS Analytic Limit')
         ax.set_ylabel('Global FID (~100 samples)')
         ax.set_title('Overall Generation Quality (FID)')
     else:
-        ax.errorbar(x_pos, res_df['LPIPS_val'], yerr=res_df['LPIPS_val_std'], fmt='-o', color='purple', capsize=5)
-        ax.scatter(0, res_df['LPIPS_val'].iloc[0], color='red', s=100, zorder=5)
+        ax.errorbar(x_pos, res_df['lpips'], yerr=res_df['lpips_std'], fmt='-o', color='purple', capsize=5)
+        ax.scatter(0, res_df['lpips'].iloc[0], color='red', s=100, zorder=5, label='HQS Analytic Limit')
         ax.set_ylabel('LPIPS Distance')
-        ax.set_title('Perceptual Distance ')
+        ax.set_title('Perceptual Distance')
         
     ax.set_xticks(x_pos)
     ax.set_xticklabels(x_labels)
+    ax.legend()
 
     plt.tight_layout()
     plt.savefig('experiment1_metrics_plot.png', dpi=300)
     print("\nSaved plot to 'experiment1_metrics_plot.png'")
-    plt.show()
+    try:
+        plt.show()
+    except Exception as e:
+        print("Note: Plot displayed or interrupted:", e)
 
 if __name__ == "__main__":
     analyze_exp1()

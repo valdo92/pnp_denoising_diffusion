@@ -63,3 +63,11 @@ image_list_file: data/ffhq_100_val.txt
 ```bash
 poetry run python main.py
 ```
+
+
+TO DO:
+
+- [ ] faire une comparaison des photos avec le leur
+- [ ] faire le face swap
+- [ ] faire le changement d'algo
+- [ ] écrire le rapport

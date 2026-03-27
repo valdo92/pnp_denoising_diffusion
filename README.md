@@ -67,7 +67,7 @@ poetry run python main.py
 
 TO DO:
 
-- [ ] pouvoir save le config
+- [x] pouvoir save le config
 - [ ] faire l'expérience sur la valeur de lambda
 - [ ] faire l'expérience sur la diffusion
 - [ ] faire varier omega avec les meilleurs valeurs

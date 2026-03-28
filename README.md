@@ -1,4 +1,4 @@
-# Multivariate Time Series Forecasting with Graph Neural Networks
+# Denoising Diffusion Models for Plug-and-Play Image Restoration
 
 **Authors:** [Valentin Exbrayat](https://github.com/valdo92), [Hugo Pavy](https://github.com/hpavy)  
 **Date:** March 2026
@@ -17,6 +17,15 @@ This repository contains an implementation of the **Denoising Diffusion Models f
 }
 ```
 
+- [Denoising Diffusion Models for Plug-and-Play Image Restoration](#denoising-diffusion-models-for-plug-and-play-image-restoration)
+    - [🔍 Overview](#-overview)
+    - [😀 Some results](#-some-results)
+    - [💻 Installation](#-installation)
+    - [🚀 Minimal run snippet](#-minimal-run-snippet)
+      - [For the DiffPIR](#for-the-diffpir)
+      - [For the face swap algorithm](#for-the-face-swap-algorithm)
+
+
 
 
 ### 🔍 Overview
@@ -25,14 +34,44 @@ The goal of this work is to study the use of diffusion model for image inpaintin
 
 **Key Contributions:**
 * **Easier implementation:** focusing only on inpainting
-* **Stressing the model**: trying to increase the size of the mask to study how the model handles it.
 * **Other PnP method**: Instead of HQS we tried to use PGD method with our model.
-* **Study of the parameter $\sigma$**: Changing how the $\sigma$ parameter is computed.
+* **Changing the DiffPIR**: Using the DIffPIR algorithm in order to create face swap.
 
 You can find the report of our work in the file [report.pdf](report.pdf).
 
 ---
+### 😀 Some results
 
+**From DiffPIR**
+
+You can see on the examples below that the PnP algorithm using the diffusion is well abled to generate realistic faces with inpainting problems.
+
+<div align="center">
+  <img src="results/diffpir_1.png" width="50%">
+</div>
+
+<div align="center">
+  <img src="results/diffpir_2.png" width="50%">
+</div>
+
+<div align="center">
+  <img src="results/diffpir_3.png" width="50%">
+</div>
+
+
+**Face Swap**
+
+You can see below an example of the algorithm used in order to generate face swap. You can find how we made that in the report.
+
+<div align="center">
+  <img src="results/face_swap.png" width="80%">
+</div>
+
+
+
+
+
+---
 ### 💻 Installation
 
 This project manages dependencies using **[Poetry](https://python-poetry.org)**.
@@ -44,9 +83,15 @@ pip install poetry
 poetry install
 ```
 
+**Installing the diffusion model**
+
+You can install the diffusion model using this [link](https://drive.google.com/drive/folders/1jElnRoFv7b31fG0v6pTSQkelbSX3xGZh). Then put it in the folder `model/`.
+
 ---
 
 ### 🚀 Minimal run snippet
+
+#### For the DiffPIR
 
 1) Configure `config.yaml` choosing the data and the hyperparameters.
 * You need to put your data in the folder `data/`. 
@@ -63,12 +108,15 @@ image_list_file: data/ffhq_100_val.txt
 ```bash
 poetry run python main.py
 ```
+#### For the face swap algorithm
+
+1) Configure `config_face_swap.yaml` choosing the data and the hyperparameters.
+* You need to put your data in the folder `data/`. 
 
 
-TO DO:
+1) Run the main file for face swap (example):
 
-- [x] pouvoir save le config
-- [ ] faire l'expérience sur la valeur de lambda
-- [ ] faire l'expérience sur la diffusion
-- [ ] faire varier omega avec les meilleurs valeurs
-- [ ] mettre ça dans le rapport
+```bash
+poetry run python main_face_swap.py
+```
+

@@ -201,4 +201,5 @@ model/*
 !model/.gitkeep
 
 results/*
+!results/**.png
 !results/.gitkeep
